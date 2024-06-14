@@ -329,7 +329,7 @@ class Renderer:
         
 class Simulation:
     
-    def __init__(self, mode : Simulation_mode, render : bool, field_width, field_height, speed, number_of_food):
+    def __init__(self, mode : Simulation_mode, render : bool, field_width, field_height, speed, number_of_food, iterations_per_run):
         self.world = World(field_width, field_height)
         if (render or mode == Simulation_mode.PLAY):
             self.renderer = Renderer(field_width,field_height)
@@ -338,6 +338,9 @@ class Simulation:
         self.mode = mode
         self.speed = speed 
         self.number_of_food = number_of_food
+        self.time_of_death = {}
+        self.iteration = 0
+        self.iteration_per_run = iterations_per_run
         
     def handle_food_collisions(self, food_collisions):
         for snake, food_coordinate in food_collisions:
@@ -361,21 +364,19 @@ class Simulation:
             if s1.index == s2.index: # No collisions with itself
                 continue
             
-            # Required for special case
-            # if s1.length() == 1 and s2.length() == 1:
-            #     s1.eliminate(self.world)
-            #     s2.eliminate(self.world)
-            #     continue
-            
             if s1.is_alive() and i1 == 0:
-                s1.eliminate(self.world)
+                self.kill_snake(s1)
             if s2.is_alive() and i2 == 0:
-                s2.eliminate(self.world)
+                self.kill_snake(s2)
             
     def handle_wall_collisions(self,wall_collisions):
         for snake in wall_collisions:
-            snake.eliminate(self.world)
+            self.kill_snake(snake)
             
+    def kill_snake(self,snake):
+        snake.eliminate(self.world)
+        self.time_of_death[snake.index] = self.iteration
+        
     def handle_collisions(self):
         food_collisions, snake_collisions, wall_collisions = self.world.get_collisions()
         # print(self.world.fo)
@@ -393,9 +394,13 @@ class Simulation:
             if self.world.snakes[i]:
                 self.world.snakes[i].step(self.world.block_size)
 
-    def run(self,iterations, stop_condition):
+    def reset(self):
+        self.iteration = 0
+        self.time_of_death = {}
+        
+    def run(self, stop_condition):
         # Clear the screen
-        for i in range(iterations):
+        for self.iteration in range(self.iteration_per_run):
             if stop_condition(self):
                 break
             

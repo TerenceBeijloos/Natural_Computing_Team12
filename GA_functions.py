@@ -1,6 +1,7 @@
 from slither import *
 from utils import *
 from sim_functions import *
+import numpy as np
 
 class EvolvingBehavior(IBehavior):
     def __init__(self, world, weights):
@@ -48,29 +49,57 @@ def get_random_weights(number_of_weights):
 def get_null_weights(number_of_weights):
     return [0 for _ in range(number_of_weights)]
 
-def  evaluate(snakes):
+def  evaluate(snakes, sim : Simulation):
     """Evaluate the fitness of each snake."""
-    return [snake.length() for snake in snakes]
+    snake_lengths = [snake.length() for snake in snakes]
+    fitness = []
+    for i in range(len(snake_lengths)):
+        fitness.append(snake_lengths[i])
+            
+    return fitness
 
-def get_best_snakes(fitness, snakes, amount):
     """Select the best snakes based on fitness."""
+def get_best_snakes(fitness, snakes, amount):
     sorted_pairs = sorted(zip(fitness, snakes), key=lambda pair: pair[0], reverse=True)
     best_snakes = [pair for pair in sorted_pairs[:amount]]
     return best_snakes
 
-def mutate_behavior(behavior):
-    """Mutate the weights of a snake's behavior."""
+
+def normalize(weights):
+    """Normalize the weights to be within the range [-1, 1]."""
+    min_weight = min(weights)
+    max_weight = max(weights)
+
+    # If all weights are the same, avoid division by zero
+    if min_weight == max_weight:
+        return [0] * len(weights)
+    
+    return [(2 * (w - min_weight) / (max_weight - min_weight)) - 1 for w in weights]
+
+
+def mutate_behavior(behavior, fitness):
+    """Mutate the weights of a snake's behavior adaptively based on fitness."""
     new_weights = []
+
+    base_mutation_rate = 0.1
+
+    mutation_rate = base_mutation_rate / (1 + fitness)
+    mutation_rate = max(0.01, min(mutation_rate, 1.0))
+
     for weight in behavior.weights:
-        if random.uniform(0.0, 1.0) < 0.05:  # 5% mutation rate
-            new_weights.append(weight + (random.gauss(0, 0.3)))
+        if random.random() < mutation_rate:
+            mutation_value = random.gauss(0, 0.1)
+            new_weight = weight + mutation_value
         else:
-            new_weights.append(weight)
+            new_weight = weight
+        new_weights.append(new_weight)
+
     behavior.weights = new_weights
 
 def get_next_population(best_snakes,population_size, elitism, number_of_best):
     """Generate the next population of snakes."""
     new_population = []
+    # snakes = [snake[1] for snake in best_snakes]
 
     # Replicate best snakes to ensure minimum population size
     while len(new_population) < population_size:
@@ -82,10 +111,15 @@ def get_next_population(best_snakes,population_size, elitism, number_of_best):
     # Mutate non-elite snakes
     if elitism:
         for snake in new_population[number_of_best:]:
-            mutate_behavior(snake.behavior)
+            mutate_behavior(snake[1].behavior,snake[0])
     else:
         for snake in new_population:
-            mutate_behavior(snake.behavior)
+            mutate_behavior(snake[1].behavior,snake[0])
+    
+    new_population = [snake[1] for snake in new_population]
+    
+    for i in range(len(new_population)):
+        new_population[i].index = i
     
     return new_population
 
@@ -96,13 +130,13 @@ def evolve(behavior, initial_weights, population_size, number_of_food, number_of
     for generation in range(iterations):
         fitness = [0 for _ in range(population_size)]
         for _ in range(rounds_per_sim):
-            sim.run(200, stop_condition)
-            current_fitness = evaluate(sim.world.snakes)
-            fitness = [fitness[i] + current_fitness[i] for i in range(population_size)]
             round_init(sim,number_of_food)
+            sim.run(stop_condition)
+            current_fitness = evaluate(sim.world.snakes, sim)
+            fitness = [fitness[i] + current_fitness[i] for i in range(population_size)]
             
         best = get_best_snakes(fitness, sim.world.snakes, number_of_best)
         # print("Best:",best[0].behavior.weights)
         weights_to_file(best[0][1].behavior.weights,file_name,['Nearest food', 'General food', 'Nearest snake', 'General snake', 'Walls', 'Fitness'],best[0][0]/rounds_per_sim)
-        sim.world.snakes = get_next_population([snake[1] for snake in best],population_size,elitism,number_of_best)
+        sim.world.snakes = get_next_population(best,population_size,elitism,number_of_best)
         

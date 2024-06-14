@@ -6,10 +6,10 @@ pip install pygame
 ```
 
 Run the desired experiment or create a new one.
-Running the experiments will result in a csv file with weights and fitnesses of the best snake of each iteration.
+Running the experiments will result in a csv file with weights and fitnesses of the best snake of each iteration
 For the baseline run:
 ```
-python.exe GA.py
+python.exe GA_baseline.py
 ```
 
 For other experiments run one of: GA_two_snakes.py, GA_limited_food.py, GA_elitism.py, GA_elitism_two_snakes.py

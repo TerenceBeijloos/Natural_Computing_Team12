@@ -11,7 +11,7 @@ class Greedy_bot(IBehavior):
         
 population_size = 7
 number_of_food = 10
-weights = [5.971692749035305,2.7433712160732373,-3.4495049768086923,-1.6483494522167281,-0.03134325225571933]
+weights = [1.466258876760026,-0.0734985684795867,-2.6569542991187984,-2.1167855823488013,-0.3470788581264732]
 block_size = 20
 # fov = Circle_view(block_size*5)
 fov = God_view()
@@ -24,5 +24,5 @@ sim :Simulation = init_simulation(population_size,number_of_food, EvolvingBehavi
 # sim.spawn_snakes(population_size, EvolvingBehavior(sim.world, trained_weights(5)),fov,Renderer.blue)
 
 while True:
-    sim.run(500, stop_condition)
+    sim.run(stop_condition)
     round_init(sim,number_of_food)

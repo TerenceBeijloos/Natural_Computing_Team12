@@ -7,7 +7,7 @@ def stop_condition(sim):
 
 def init_simulation(population_size, number_of_food, behavior : IBehavior, initial_weights,fov,render=False, color = Renderer.blue):
     """Initialize the simulation with snakes and food."""
-    sim = Simulation(Simulation_mode.LEARN, render, 800, 600, 10, number_of_food)
+    sim = Simulation(Simulation_mode.LEARN, render, 800, 600, 10, number_of_food,500)
     for _ in range(population_size):
         sim.spawn_snakes(1, behavior(sim.world, initial_weights(5)),fov,color)
     return sim
@@ -16,6 +16,7 @@ def round_init(sim : Simulation, number_of_food):
     """Initialize a new round in the simulation."""
     snakes = sim.world.snakes
     sim.world.reset()
+    sim.reset()
     for snake in snakes:
         sim.spawn_snakes(1, snake.behavior,snake.fov,snake.color)
         
